@@ -69,6 +69,22 @@ public class CardServiceTest {
 
     @Test
     void putMoney() {
+        ArgumentCaptor<BigDecimal> amountCaptor = ArgumentCaptor.forClass(BigDecimal.class);
+        ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
+
+        BigDecimal moneyToPut =  new BigDecimal("1050");
+
+        Card card = new Card(20L, "12345", 20L,  TestUtil.getHash("12345"));
+        when(cardsDao.getCardByNumber(anyString())).thenReturn(card);
+
+        when(accountService.putMoney(idCaptor.capture(), amountCaptor.capture()))
+                .thenReturn(new BigDecimal("21050"));
+
+        BigDecimal moneyAfterPut = cardService.putMoney(card.getNumber(), "12345", moneyToPut);
+
+        verify(accountService, only()).putMoney(card.getId(), moneyToPut);
+        assertEquals(amountCaptor.getValue(), moneyToPut);
+        assertEquals(new BigDecimal("21050"), moneyAfterPut);
     }
 
     @Test
@@ -80,5 +96,13 @@ public class CardServiceTest {
             cardService.getBalance("1234", "0012");
         });
         assertEquals(thrown.getMessage(), "Pincode is incorrect");
+    }
+
+    @Test
+    void testExceptionWhenCardNotExist() {
+        Card card = new Card(1L, "1234", 1L, TestUtil.getHash("12345"));
+
+        assertThrows(IllegalArgumentException.class, () -> cardService.cnangePin(card.getNumber(), "12345", "54321"));
+
     }
 }
